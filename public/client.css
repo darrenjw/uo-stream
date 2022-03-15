@@ -1,0 +1,21 @@
+* {
+    font-size: 100%;
+    font-family: Arial;
+}
+.map {
+    height: 800px;
+    width: 100%;
+}
+
+.wrapper {
+    display: flex;
+}
+
+.left {
+    flex: 0 0 80%;
+}
+
+.right {
+    flex: 1;
+    padding-left: 10px;
+}

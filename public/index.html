@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.1.1/css/ol.css" type="text/css">
+    <link rel="stylesheet" href="./client.css" type="text/css">
+    <script src="https://cdn.jsdelivr.net/gh/openlayers/openlayers.github.io@master/en/v6.1.1/build/ol.js"></script>
+    <script src="client.js" type="module"></script>
+    <script>
+
+        function writeMetricOptions(json)  {
+            const select = document.getElementById('metric');
+
+            for (let [code, description] of Object.entries(json)) {
+                let option = new Option(description, code);
+                select.add(option, undefined);
+            }
+
+        }
+
+        fetch("/metrics", {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).then(response => response.json()).then(json => writeMetricOptions(json));
+    </script>
+    <title>Urban Observatory</title>
+</head>
+<body>
+
+<div class="wrapper">
+    <div id="map" class="map left"></div>
+    <div class="right">
+        <h1>Streaming data modelling for real-time monitoring and forecasting</h1>
+
+
+
+        <form id="plot">
+            <p>Select metric to start</p>
+            <div>
+                <label for="metric">Metric</label>
+                <select id="metric"></select>
+            </div>
+
+            <br/>
+
+            <button id="submit" type="submit">Plot</button>
+        </form>
+        <br/>
+
+        <div>
+            <small id="received"></small>
+        </div>
+
+        <br/>
+        <br/>
+
+        <p>Further information: <div><a href="https://www.turing.ac.uk/research/research-projects/streaming-data-modelling-real-time-monitoring-and-forecasting">Turing project (streaming data modelling)</a></div>
+        <div><a href="https://urbanobservatory.ac.uk/">Urban Observatory</a></div></p>
+
+    </div>
+</div>
+
+<script type="module">
+    import {renderData} from './client.js';
+
+    const plotElement = document.getElementById('plot');
+    const metricElement = document.getElementById('metric');
+    const submitElement = document.getElementById('submit');
+    const receivedElement = document.getElementById('received');
+
+    let currentMetric = '';
+    let ws;
+    let count = 0;
+
+    metricElement.onchange = (event) => {
+        console.log('changed');
+        submitElement.disabled = false;
+    }
+
+    plotElement.onsubmit = async (event) => {
+        event.preventDefault();
+        const newMetric = metricElement.value;
+
+        if(newMetric !== currentMetric) {
+            currentMetric = newMetric;
+            submitElement.disabled = true;
+            count = 0;
+            receivedElement.innerText = "Received: 0 messages from server"
+
+            if(ws) {
+                console.info('Closing websocket');
+                ws.close();
+            }
+
+            console.info(`Creating websocket for: ${currentMetric}`);
+            ws = new WebSocket(`ws://localhost:7000/uo/${currentMetric}`.toLowerCase());
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.info('Received server data');
+                count++;
+                receivedElement.innerText = `Received: ${count} messages from server`
+                renderData(data);
+            }
+        }
+    };
+</script>
+</body>
+</html>
